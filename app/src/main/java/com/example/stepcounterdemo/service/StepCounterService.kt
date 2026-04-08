@@ -14,6 +14,7 @@ import android.hardware.SensorManager
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.stepcounterdemo.MainActivity
+import com.example.stepcounterdemo.R
 import com.example.stepcounterdemo.StepCounterApplication
 import com.example.stepcounterdemo.StepRepository
 import kotlinx.coroutines.CoroutineScope
@@ -83,7 +84,7 @@ class StepCounterService : Service() {
             }
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -119,7 +120,7 @@ class StepCounterService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Step Counter")
             .setContentText("$steps steps")
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(openPendingIntent)
             .addAction(0, "Stop", stopPendingIntent)
             .setOngoing(true)

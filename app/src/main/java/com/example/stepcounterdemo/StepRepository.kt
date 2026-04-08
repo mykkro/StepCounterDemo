@@ -8,11 +8,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 class StepRepository(private val dao: HourlyStepDao) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // AtomicInteger backing field ensures thread-safe compound increment from sensor callbacks
+    private val _stepCountAtomic = AtomicInteger(0)
     private val _stepCount = MutableStateFlow(0)
     val stepCount: StateFlow<Int> = _stepCount
 
@@ -28,12 +31,9 @@ class StepRepository(private val dao: HourlyStepDao) {
 
     /** Called by the service for each step delta. Updates in-memory count and persists to DB. */
     fun addSteps(delta: Int) {
-        _stepCount.value += delta
+        _stepCount.value = _stepCountAtomic.addAndGet(delta)
         val hourKey = System.currentTimeMillis() / 3_600_000L
-        scope.launch {
-            dao.addSteps(hourKey, delta)
-            refreshLast24Hours()
-        }
+        scope.launch { dao.addSteps(hourKey, delta) }
     }
 
     fun incrementElapsed() {
@@ -45,6 +45,7 @@ class StepRepository(private val dao: HourlyStepDao) {
     }
 
     fun resetSession() {
+        _stepCountAtomic.set(0)
         _stepCount.value = 0
         _elapsedSeconds.value = 0L
     }

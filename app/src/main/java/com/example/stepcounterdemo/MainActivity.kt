@@ -107,7 +107,10 @@ fun StepCounterScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && !runInBackground && isRunning) {
+            // Read .value directly so we always get current state, not a stale closure capture
+            if (event == Lifecycle.Event.ON_STOP
+                && !viewModel.runInBackground.value
+                && viewModel.isRunning.value) {
                 viewModel.stop()
             }
         }
