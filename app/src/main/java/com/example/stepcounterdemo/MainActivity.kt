@@ -16,14 +16,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +35,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.stepcounterdemo.ui.HourlyStepChart
 import com.example.stepcounterdemo.ui.theme.StepCounterDemoTheme
 import java.util.Locale
 
@@ -60,35 +64,66 @@ fun StepCounterScreen(
 ) {
     val context = LocalContext.current
 
-    // Track ACTIVITY_RECOGNITION permission (required on API 29+)
-    var hasPermission by remember {
+    var hasActivityPermission by remember {
         mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                 ContextCompat.checkSelfPermission(
                     context, Manifest.permission.ACTIVITY_RECOGNITION
                 ) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true // permission not needed below Android 10
-            }
+            else true
         )
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> hasPermission = granted }
+    val permissionsToRequest = buildList {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            add(Manifest.permission.ACTIVITY_RECOGNITION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            add(Manifest.permission.POST_NOTIFICATIONS)
+    }.toTypedArray()
 
-    // Ask for permission once on first composition
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !hasPermission) {
-            permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
-        }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        hasActivityPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            results[Manifest.permission.ACTIVITY_RECOGNITION] ?: false
+        else true
+    }
+
+    DisposableEffect(Unit) {
+        if (permissionsToRequest.isNotEmpty()) permissionLauncher.launch(permissionsToRequest)
+        onDispose {}
     }
 
     val isRunning by viewModel.isRunning.collectAsState()
     val stepCount by viewModel.stepCount.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
-    val activeSensorMode by viewModel.activeSensorMode.collectAsState()
-    val preferredMode by viewModel.preferredMode.collectAsState()
+    val runInBackground by viewModel.runInBackground.collectAsState()
+    val last24Hours by viewModel.last24Hours.collectAsState()
+    val currentHour = System.currentTimeMillis() / 3_600_000L
+
+    var showGraph by remember { mutableStateOf(false) }
+
+    // Stop service on app background if "run in background" is off
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && !runInBackground && isRunning) {
+                viewModel.stop()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    if (showGraph) {
+        HourlyStepChart(
+            entries = last24Hours,
+            currentHour = currentHour,
+            onClose = { showGraph = false },
+            modifier = modifier
+        )
+        return
+    }
 
     val minutes = elapsedSeconds / 60
     val seconds = elapsedSeconds % 60
@@ -99,7 +134,6 @@ fun StepCounterScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Elapsed time
         Text(
             text = timeString,
             style = MaterialTheme.typography.displayLarge,
@@ -108,7 +142,6 @@ fun StepCounterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Step count
         Text(
             text = "$stepCount steps",
             style = MaterialTheme.typography.displayMedium
@@ -116,40 +149,27 @@ fun StepCounterScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ---- Source selector (only shown when not running) ----
-        if (!isRunning) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Text(
-                text = "Step source",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Run in background",
+                style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (viewModel.stepCounterAvailable) {
-                    SourceButton(
-                        label = "Step counter",
-                        selected = preferredMode == StepCounterViewModel.SensorMode.STEP_COUNTER,
-                        enabled = !isRunning,
-                        onClick = { viewModel.setPreferredMode(StepCounterViewModel.SensorMode.STEP_COUNTER) }
-                    )
-                }
-                if (viewModel.accelerometerAvailable) {
-                    SourceButton(
-                        label = "Accelerometer",
-                        selected = preferredMode == StepCounterViewModel.SensorMode.ACCELEROMETER,
-                        enabled = !isRunning,
-                        onClick = { viewModel.setPreferredMode(StepCounterViewModel.SensorMode.ACCELEROMETER) }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
+            Switch(
+                checked = runInBackground,
+                onCheckedChange = { viewModel.setRunInBackground(it) },
+                enabled = !isRunning
+            )
         }
 
-        // Start / Stop buttons
+        Spacer(modifier = Modifier.height(24.dp))
+
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Button(
-                onClick = { viewModel.start(hasPermission) },
-                enabled = !isRunning
+                onClick = { viewModel.start() },
+                enabled = !isRunning && hasActivityPermission
             ) {
                 Text("Start")
             }
@@ -161,41 +181,13 @@ fun StepCounterScreen(
             }
         }
 
-        // Show active sensor mode while running or after a session
-        if (isRunning || stepCount > 0 || elapsedSeconds > 0) {
-            Spacer(modifier = Modifier.height(16.dp))
-            val modeLabel = when (activeSensorMode) {
-                StepCounterViewModel.SensorMode.STEP_COUNTER -> "Using: hardware step counter"
-                StepCounterViewModel.SensorMode.ACCELEROMETER -> "Using: accelerometer"
-                StepCounterViewModel.SensorMode.NONE -> "No sensor available"
-            }
-            Text(
-                text = modeLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+        Spacer(modifier = Modifier.height(16.dp))
 
-@Composable
-private fun SourceButton(
-    label: String,
-    selected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit
-) {
-    if (selected) {
-        Button(onClick = onClick, enabled = enabled) {
-            Text(label)
-        }
-    } else {
-        OutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            colors = ButtonDefaults.outlinedButtonColors()
-        ) {
-            Text(label)
+        OutlinedButton(onClick = {
+            viewModel.refreshChart()
+            showGraph = true
+        }) {
+            Text("Last 24h")
         }
     }
 }
