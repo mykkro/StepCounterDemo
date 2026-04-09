@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.stepcounterdemo.R
 import com.example.stepcounterdemo.data.HourlyStepEntity
 
 /**
@@ -59,7 +61,7 @@ fun HourlyStepChart(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Last 24 Hours",
+                text = stringResource(R.string.last_24_hours_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
