@@ -118,11 +118,11 @@ class StepCounterService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Step Counter")
-            .setContentText("$steps steps")
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText("$steps ${getString(R.string.steps)}")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(openPendingIntent)
-            .addAction(0, "Stop", stopPendingIntent)
+            .addAction(0, getString(R.string.notification_stop_action), stopPendingIntent)
             .setOngoing(true)
             .build()
     }
