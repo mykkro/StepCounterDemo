@@ -74,7 +74,7 @@ class StepCounterService : Service() {
 
         val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         sensor?.let {
-            sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_FASTEST)
         }
 
         timerJob = scope.launch {

@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -216,13 +217,13 @@ fun StepCounterScreen(
                 LocaleManager.setLocale(context, "cs")
                 activity.recreate()
             }) {
-                Text("🇨🇿")
+                Text("🇨🇿", fontSize = 28.sp)
             }
             TextButton(onClick = {
                 LocaleManager.setLocale(context, "en")
                 activity.recreate()
             }) {
-                Text("🇬🇧")
+                Text("🇬🇧", fontSize = 28.sp)
             }
         }
     }
