@@ -211,7 +211,7 @@ fun StepCounterScreen(
                 .padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            val activity = context as Activity
+            val activity = context as? Activity ?: return@Row
             TextButton(onClick = {
                 LocaleManager.setLocale(context, "cs")
                 activity.recreate()
