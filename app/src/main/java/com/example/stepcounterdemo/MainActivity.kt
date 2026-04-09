@@ -1,6 +1,8 @@
 package com.example.stepcounterdemo
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +25,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -32,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -44,6 +49,11 @@ import com.example.stepcounterdemo.ui.theme.StepCounterDemoTheme
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleManager.applyLocale(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -107,7 +117,6 @@ fun StepCounterScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            // Read .value directly so we always get current state, not a stale closure capture
             if (event == Lifecycle.Event.ON_STOP
                 && !viewModel.runInBackground.value
                 && viewModel.isRunning.value) {
@@ -132,65 +141,89 @@ fun StepCounterScreen(
     val seconds = elapsedSeconds % 60
     val timeString = String.format(Locale.US, "%02d:%02d", minutes, seconds)
 
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = timeString,
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "$stepCount steps",
-            style = MaterialTheme.typography.displayMedium
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Run in background",
-                style = MaterialTheme.typography.bodyMedium
+                text = timeString,
+                style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.Bold
             )
-            Switch(
-                checked = runInBackground,
-                onCheckedChange = { viewModel.setRunInBackground(it) },
-                enabled = !isRunning
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "$stepCount ${stringResource(R.string.steps)}",
+                style = MaterialTheme.typography.displayMedium
             )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.run_in_background),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Switch(
+                    checked = runInBackground,
+                    onCheckedChange = { viewModel.setRunInBackground(it) },
+                    enabled = !isRunning || runInBackground
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Button(
+                    onClick = { viewModel.start() },
+                    enabled = !isRunning && hasActivityPermission
+                ) {
+                    Text(stringResource(R.string.start))
+                }
+                Button(
+                    onClick = { viewModel.stop() },
+                    enabled = isRunning
+                ) {
+                    Text(stringResource(R.string.stop))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(onClick = {
+                viewModel.refreshChart()
+                showGraph = true
+            }) {
+                Text(stringResource(R.string.last_24h))
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Button(
-                onClick = { viewModel.start() },
-                enabled = !isRunning && hasActivityPermission
-            ) {
-                Text("Start")
+        // Language flag buttons — top-right corner
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            val activity = context as Activity
+            TextButton(onClick = {
+                LocaleManager.setLocale(context, "cs")
+                activity.recreate()
+            }) {
+                Text("🇨🇿")
             }
-            Button(
-                onClick = { viewModel.stop() },
-                enabled = isRunning
-            ) {
-                Text("Stop")
+            TextButton(onClick = {
+                LocaleManager.setLocale(context, "en")
+                activity.recreate()
+            }) {
+                Text("🇬🇧")
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(onClick = {
-            viewModel.refreshChart()
-            showGraph = true
-        }) {
-            Text("Last 24h")
         }
     }
 }
