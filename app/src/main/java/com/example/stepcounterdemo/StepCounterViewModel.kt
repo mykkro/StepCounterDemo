@@ -1,6 +1,7 @@
 package com.example.stepcounterdemo
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,17 +15,24 @@ import kotlinx.coroutines.launch
 class StepCounterViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = (application as StepCounterApplication).repository
+    private val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     val isRunning: StateFlow<Boolean> = repository.isRunning
     val stepCount: StateFlow<Int> = repository.stepCount
     val elapsedSeconds: StateFlow<Long> = repository.elapsedSeconds
     val last24Hours: StateFlow<List<HourlyStepEntity>> = repository.last24Hours
 
-    private val _runInBackground = MutableStateFlow(false)
+    private val _runInBackground = MutableStateFlow(
+        prefs.getBoolean("run_in_background", false)
+    )
     val runInBackground: StateFlow<Boolean> = _runInBackground
 
     fun setRunInBackground(value: Boolean) {
+        prefs.edit().putBoolean("run_in_background", value).apply()
         _runInBackground.value = value
+        if (!value && isRunning.value) {
+            stop()
+        }
     }
 
     fun start() {
