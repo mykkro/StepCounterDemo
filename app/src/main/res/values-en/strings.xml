@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Step Counter</string>
+    <string name="run_in_background">Run in background</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="last_24h">Last 24h</string>
+    <string name="last_24_hours_title">Last 24 hours</string>
+    <string name="steps">steps</string>
+    <string name="notification_title">Step Counter</string>
+    <string name="notification_stop_action">Stop</string>
+</resources>

@@ -1,3 +1,11 @@
 <resources>
-    <string name="app_name">StepCounterDemo</string>
+    <string name="app_name">Krokoměr</string>
+    <string name="run_in_background">Běžet na pozadí</string>
+    <string name="start">Spustit</string>
+    <string name="stop">Zastavit</string>
+    <string name="last_24h">Posl. 24 h</string>
+    <string name="last_24_hours_title">Posledních 24 hodin</string>
+    <string name="steps">kroků</string>
+    <string name="notification_title">Krokoměr</string>
+    <string name="notification_stop_action">Zastavit</string>
 </resources>
