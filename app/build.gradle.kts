@@ -53,7 +53,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.junit)
-    testImplementation("org.json:json:20231013")
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
