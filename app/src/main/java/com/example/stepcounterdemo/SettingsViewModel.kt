@@ -34,19 +34,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun testConnection() {
         viewModelScope.launch(Dispatchers.IO) {
             _testState.value = TestState.Loading
-            val deviceGuid = prefs.getString("device_guid", "") ?: ""
-            val result = syncRepository.authenticate(host.trim(), username.trim(), password, deviceGuid)
-            when (result) {
-                is SyncRepository.AuthResult.Success -> {
-                    prefs.edit()
-                        .putString("jwt_token", result.token)
-                        .putString("human_id", result.humanId)
-                        .apply()
-                    _testState.value = TestState.Success
+            try {
+                val deviceGuid = prefs.getString("device_guid", "") ?: ""
+                if (deviceGuid.isBlank()) {
+                    _testState.value = TestState.Failure("Device not initialized")
+                    return@launch
                 }
-                is SyncRepository.AuthResult.Failure -> {
-                    _testState.value = TestState.Failure(result.message)
+                val result = syncRepository.authenticate(host.trim(), username.trim(), password, deviceGuid)
+                when (result) {
+                    is SyncRepository.AuthResult.Success -> {
+                        prefs.edit()
+                            .putString("jwt_token", result.token)
+                            .putString("human_id", result.humanId)
+                            .apply()
+                        _testState.value = TestState.Success
+                    }
+                    is SyncRepository.AuthResult.Failure -> {
+                        _testState.value = TestState.Failure(result.message)
+                    }
                 }
+            } catch (e: Exception) {
+                _testState.value = TestState.Failure(e.message ?: "Unexpected error")
             }
         }
     }
