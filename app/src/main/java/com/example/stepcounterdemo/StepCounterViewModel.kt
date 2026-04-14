@@ -52,8 +52,6 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
         when (key) {
             "server_host", "server_username", "server_password" ->
                 _serverConfigured.value = isServerConfigured()
-            "last_sync_time" ->
-                _lastSyncTime.value = prefs.getLong("last_sync_time", 0L)
         }
     }
 
@@ -121,6 +119,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                 if (records.isEmpty()) {
                     val now = System.currentTimeMillis()
                     prefs.edit().putLong("last_sync_time", now).apply()
+                    _lastSyncTime.value = now
                     _syncState.value = SyncState.Success(0)
                     return@launch
                 }
@@ -141,6 +140,11 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                                 .apply()
                             result = syncRepository.submitBatch(host, token, humanId, deviceGuid, batch)
                         } else {
+                            if (totalAccepted > 0) {
+                                val now = System.currentTimeMillis()
+                                prefs.edit().putLong("last_sync_time", now).apply()
+                                _lastSyncTime.value = now
+                            }
                             _syncState.value = SyncState.Failure(
                                 getApplication<Application>().getString(R.string.sync_auth_failed)
                             )
@@ -155,10 +159,20 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                             prefs.edit().putLong("last_synced_hour", newWatermark).apply()
                         }
                         is SyncRepository.BatchResult.Failure -> {
+                            if (totalAccepted > 0) {
+                                val now = System.currentTimeMillis()
+                                prefs.edit().putLong("last_sync_time", now).apply()
+                                _lastSyncTime.value = now
+                            }
                             _syncState.value = SyncState.Failure(result.message)
                             return@launch
                         }
                         is SyncRepository.BatchResult.Unauthorized -> {
+                            if (totalAccepted > 0) {
+                                val now = System.currentTimeMillis()
+                                prefs.edit().putLong("last_sync_time", now).apply()
+                                _lastSyncTime.value = now
+                            }
                             _syncState.value = SyncState.Failure(
                                 getApplication<Application>().getString(R.string.sync_auth_failed)
                             )
@@ -169,6 +183,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
 
                 val now = System.currentTimeMillis()
                 prefs.edit().putLong("last_sync_time", now).apply()
+                _lastSyncTime.value = now
                 _syncState.value = SyncState.Success(totalAccepted)
             } finally {
                 syncMutex.unlock()
