@@ -149,6 +149,7 @@ fun StepCounterScreen(
     val serverConfigured by viewModel.serverConfigured.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val lastSyncTime by viewModel.lastSyncTime.collectAsState()
+    val lastSyncFailed by viewModel.lastSyncFailed.collectAsState()
     val currentHour = System.currentTimeMillis() / 3_600_000L
 
     var showGraph by remember { mutableStateOf(false) }
@@ -262,28 +263,26 @@ fun StepCounterScreen(
                 }) {
                     Text(stringResource(R.string.last_24h))
                 }
-                if (serverConfigured) {
-                    Button(
-                        onClick = { viewModel.sync() },
-                        enabled = syncState !is SyncState.InProgress
-                    ) {
-                        if (syncState is SyncState.InProgress) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text(stringResource(R.string.sync))
-                        }
+                Button(
+                    onClick = { viewModel.sync() },
+                    enabled = serverConfigured && syncState !is SyncState.InProgress
+                ) {
+                    if (syncState is SyncState.InProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text(stringResource(R.string.sync))
                     }
                 }
             }
 
-            // Hint text: failure message while snackbar is visible, then last success time
+            // Hint text: persistent failure flag, then last success time; hidden when not configured
             if (serverConfigured) {
                 val hintText = when {
-                    syncState is SyncState.Failure ->
+                    lastSyncFailed ->
                         stringResource(R.string.last_sync_failed)
                     lastSyncTime > 0L -> {
                         val formatted = SimpleDateFormat("HH:mm", Locale.getDefault())

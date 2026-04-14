@@ -27,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.stepcounterdemo.R
 import com.example.stepcounterdemo.SettingsViewModel
 import com.example.stepcounterdemo.TestState
@@ -36,7 +35,7 @@ import com.example.stepcounterdemo.TestState
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    viewModel: SettingsViewModel = viewModel()
+    viewModel: SettingsViewModel
 ) {
     val testState by viewModel.testState.collectAsState()
 

@@ -48,6 +48,9 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
     private val _lastSyncTime = MutableStateFlow(prefs.getLong("last_sync_time", 0L))
     val lastSyncTime: StateFlow<Long> = _lastSyncTime
 
+    private val _lastSyncFailed = MutableStateFlow(false)
+    val lastSyncFailed: StateFlow<Boolean> = _lastSyncFailed
+
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             "server_host", "server_username", "server_password" ->
@@ -120,6 +123,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                     val now = System.currentTimeMillis()
                     prefs.edit().putLong("last_sync_time", now).apply()
                     _lastSyncTime.value = now
+                    _lastSyncFailed.value = false
                     _syncState.value = SyncState.Success(0)
                     return@launch
                 }
@@ -145,6 +149,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                                 prefs.edit().putLong("last_sync_time", now).apply()
                                 _lastSyncTime.value = now
                             }
+                            _lastSyncFailed.value = true
                             _syncState.value = SyncState.Failure(
                                 getApplication<Application>().getString(R.string.sync_auth_failed)
                             )
@@ -164,6 +169,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                                 prefs.edit().putLong("last_sync_time", now).apply()
                                 _lastSyncTime.value = now
                             }
+                            _lastSyncFailed.value = true
                             _syncState.value = SyncState.Failure(result.message)
                             return@launch
                         }
@@ -173,6 +179,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                                 prefs.edit().putLong("last_sync_time", now).apply()
                                 _lastSyncTime.value = now
                             }
+                            _lastSyncFailed.value = true
                             _syncState.value = SyncState.Failure(
                                 getApplication<Application>().getString(R.string.sync_auth_failed)
                             )
@@ -184,6 +191,7 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                 val now = System.currentTimeMillis()
                 prefs.edit().putLong("last_sync_time", now).apply()
                 _lastSyncTime.value = now
+                _lastSyncFailed.value = false
                 _syncState.value = SyncState.Success(totalAccepted)
             } finally {
                 syncMutex.unlock()
