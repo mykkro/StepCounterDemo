@@ -97,4 +97,87 @@ class SyncRepositoryTest {
 
         assertTrue(result is SyncRepository.AuthResult.Failure)
     }
+
+    @Test
+    fun `submitBatch returns Success with accepted count on HTTP 200`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"accepted":["guid1","guid2"],"rejected":[]}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val records = listOf(
+            com.example.stepcounterdemo.data.HourlyStepEntity(488000L, 120),
+            com.example.stepcounterdemo.data.HourlyStepEntity(488001L, 95)
+        )
+        val result = repo.submitBatch(baseUrl, "tok", "human-1", "dev-1", records)
+
+        assertTrue(result is SyncRepository.BatchResult.Success)
+        assertEquals(2, (result as SyncRepository.BatchResult.Success).accepted)
+    }
+
+    @Test
+    fun `submitBatch sends correct Authorization header and JSON body`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"accepted":["g1"],"rejected":[]}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val hourKey = 488000L
+        val records = listOf(com.example.stepcounterdemo.data.HourlyStepEntity(hourKey, 50))
+        repo.submitBatch(baseUrl, "my-token", "human-uuid", "device-uuid", records)
+
+        val recorded = server.takeRequest()
+        assertEquals("Bearer my-token", recorded.getHeader("Authorization"))
+        assertEquals("/api/devices/measurements/stepcounter", recorded.path)
+        val body = JSONObject(recorded.body.readUtf8())
+        val m = body.getJSONArray("measurements").getJSONObject(0)
+        assertEquals("human-uuid", m.getString("humanId"))
+        assertEquals(hourKey * 3_600_000L, m.getLong("startTime"))
+        assertEquals((hourKey + 1) * 3_600_000L, m.getLong("endTime"))
+        assertEquals(50, m.getInt("stepCount"))
+    }
+
+    @Test
+    fun `submitBatch produces deterministic guid for same deviceGuid and hourKey`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"accepted":["g"],"rejected":[]}"""))
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"accepted":["g"],"rejected":[]}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val records = listOf(com.example.stepcounterdemo.data.HourlyStepEntity(488000L, 42))
+        repo.submitBatch(baseUrl, "tok", "human", "device-xyz", records)
+        repo.submitBatch(baseUrl, "tok", "human", "device-xyz", records)
+
+        val guid1 = JSONObject(server.takeRequest().body.readUtf8())
+            .getJSONArray("measurements").getJSONObject(0).getString("guid")
+        val guid2 = JSONObject(server.takeRequest().body.readUtf8())
+            .getJSONArray("measurements").getJSONObject(0).getString("guid")
+        assertEquals(guid1, guid2)
+    }
+
+    @Test
+    fun `submitBatch returns Unauthorized on HTTP 401`() {
+        server.enqueue(MockResponse().setResponseCode(401))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.submitBatch(baseUrl, "expired", "h", "d",
+            listOf(com.example.stepcounterdemo.data.HourlyStepEntity(1L, 10)))
+
+        assertEquals(SyncRepository.BatchResult.Unauthorized, result)
+    }
+
+    @Test
+    fun `submitBatch returns Failure on server error`() {
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.submitBatch(baseUrl, "tok", "h", "d",
+            listOf(com.example.stepcounterdemo.data.HourlyStepEntity(1L, 10)))
+
+        assertTrue(result is SyncRepository.BatchResult.Failure)
+        assertTrue((result as SyncRepository.BatchResult.Failure).message.contains("500"))
+    }
 }
