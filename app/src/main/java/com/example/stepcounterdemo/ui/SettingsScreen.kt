@@ -2,14 +2,16 @@ package com.example.stepcounterdemo.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -43,7 +45,12 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("←") }
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.navigate_back)
+                        )
+                    }
                 },
                 actions = {
                     TextButton(onClick = { viewModel.save(); onBack() }) {
@@ -85,24 +92,19 @@ fun SettingsScreen(
                 singleLine = true
             )
 
-            Spacer(Modifier.height(4.dp))
-
             OutlinedButton(
                 onClick = { viewModel.testConnection() },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = testState !is TestState.Loading
             ) {
-                if (testState is TestState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text(stringResource(R.string.settings_test_connection))
-                }
+                Text(stringResource(R.string.settings_test_connection))
             }
 
             when (val s = testState) {
+                is TestState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
                 is TestState.Success -> Text(
                     stringResource(R.string.settings_connection_ok),
                     color = MaterialTheme.colorScheme.primary,

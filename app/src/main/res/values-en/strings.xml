@@ -21,4 +21,5 @@
     <string name="sync_success">Synced %d records</string>
     <string name="sync_failure">Sync failed: %s</string>
     <string name="sync_auth_failed">Authentication failed</string>
+    <string name="navigate_back">Navigate back</string>
 </resources>
