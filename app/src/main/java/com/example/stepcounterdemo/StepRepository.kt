@@ -55,4 +55,8 @@ class StepRepository(private val dao: HourlyStepDao) {
         val fromHour = System.currentTimeMillis() / 3_600_000L - 23L
         _last24Hours.value = dao.getLast24Hours(fromHour)
     }
+
+    /** Returns all hourly rows where hourKey >= [fromHourKey], ascending. */
+    fun getHoursSince(fromHourKey: Long): List<HourlyStepEntity> =
+        dao.getLast24Hours(fromHourKey)
 }

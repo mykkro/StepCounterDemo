@@ -78,4 +78,28 @@ class StepRepositoryTest {
         repository.setRunning(false)
         assertFalse(repository.isRunning.value)
     }
+
+    @Test
+    fun `getHoursSince returns only rows at or after given hourKey`() {
+        dao.addSteps(100L, 50)
+        dao.addSteps(101L, 100)
+        dao.addSteps(102L, 75)
+
+        val result = repository.getHoursSince(101L)
+
+        assertEquals(2, result.size)
+        assertEquals(101L, result[0].hourKey)
+        assertEquals(100, result[0].stepCount)
+        assertEquals(102L, result[1].hourKey)
+        assertEquals(75, result[1].stepCount)
+    }
+
+    @Test
+    fun `getHoursSince returns empty list when no rows at or after hourKey`() {
+        dao.addSteps(100L, 50)
+
+        val result = repository.getHoursSince(101L)
+
+        assertTrue(result.isEmpty())
+    }
 }
