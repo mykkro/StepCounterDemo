@@ -1,0 +1,82 @@
+<h2>Settings Screen — How should it appear?</h2>
+<p class="subtitle">Three options for how the settings screen opens when the user taps the gear icon.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;min-height:240px">
+        <div style="background:#181825;border-radius:8px;padding:12px;margin:4px;box-shadow:0 4px 20px #00000088">
+          <div style="font-weight:bold;font-size:14px;margin-bottom:10px;color:#cba6f7">Server Settings</div>
+          <div style="font-size:10px;color:#6c7086;margin-bottom:2px">HOST URL</div>
+          <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:8px">https://my-server.example.com</div>
+          <div style="font-size:10px;color:#6c7086;margin-bottom:2px">USERNAME</div>
+          <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:8px">john</div>
+          <div style="font-size:10px;color:#6c7086;margin-bottom:2px">PASSWORD</div>
+          <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:10px">••••••••</div>
+          <div style="display:flex;gap:6px;justify-content:flex-end">
+            <span style="border:1px solid #585b70;padding:4px 10px;border-radius:4px;font-size:10px">Test</span>
+            <span style="border:1px solid #585b70;padding:4px 10px;border-radius:4px;font-size:10px">Cancel</span>
+            <span style="background:#89b4fa;color:#1e1e2e;padding:4px 10px;border-radius:4px;font-size:10px">Save</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Modal dialog (overlay)</h3>
+      <p>A dialog pops over the main screen. Has Test, Cancel, and Save buttons. Simple, no navigation needed.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;min-height:240px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="color:#89b4fa">← Back</span>
+          <span style="font-weight:bold;font-size:13px">Server Settings</span>
+          <span style="color:#89b4fa">Save</span>
+        </div>
+        <div style="font-size:10px;color:#6c7086;margin-bottom:2px">HOST URL</div>
+        <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:8px">https://my-server.example.com</div>
+        <div style="font-size:10px;color:#6c7086;margin-bottom:2px">USERNAME</div>
+        <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:8px">john</div>
+        <div style="font-size:10px;color:#6c7086;margin-bottom:2px">PASSWORD</div>
+        <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:10px">••••••••</div>
+        <div style="text-align:center">
+          <span style="border:1px solid #585b70;padding:4px 20px;border-radius:4px;font-size:11px">Test Connection</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Full settings screen (navigate)</h3>
+      <p>Gear icon navigates to a dedicated settings screen. Back/Save in the top bar, Test Connection button below the fields. Standard Android pattern.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;min-height:240px">
+        <div style="background:#181825;border-radius:12px 12px 0 0;padding:12px;position:absolute;bottom:0;left:0;right:0;box-shadow:0 -4px 20px #00000088">
+          <div style="width:32px;height:3px;background:#585b70;border-radius:2px;margin:0 auto 10px"></div>
+          <div style="font-weight:bold;font-size:13px;margin-bottom:10px">Server Settings</div>
+          <div style="font-size:10px;color:#6c7086;margin-bottom:2px">HOST URL</div>
+          <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:6px">https://my-server.example.com</div>
+          <div style="font-size:10px;color:#6c7086;margin-bottom:2px">USERNAME</div>
+          <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:6px">john</div>
+          <div style="font-size:10px;color:#6c7086;margin-bottom:2px">PASSWORD</div>
+          <div style="background:#313244;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:8px">••••••••</div>
+          <div style="display:flex;gap:6px">
+            <span style="border:1px solid #585b70;padding:4px 10px;border-radius:4px;font-size:10px;flex:1;text-align:center">Test</span>
+            <span style="background:#89b4fa;color:#1e1e2e;padding:4px 10px;border-radius:4px;font-size:10px;flex:1;text-align:center">Save</span>
+          </div>
+        </div>
+        <div style="color:#6c7086;font-size:10px;padding-top:4px">(main screen behind)</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Bottom sheet</h3>
+      <p>Slides up from the bottom over the main screen. Compact, dismissible by swiping down. Test and Save side by side.</p>
+    </div>
+  </div>
+
+</div>

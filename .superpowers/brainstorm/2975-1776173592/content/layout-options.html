@@ -1,0 +1,78 @@
+<h2>Where should Settings & Sync live?</h2>
+<p class="subtitle">The app currently has a top-right corner with language flags and a center column with controls. Pick the layout that feels most natural.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;line-height:1.8;min-height:220px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="color:#89b4fa">⚙ Settings</span>
+          <span>🇨🇿 🇬🇧</span>
+        </div>
+        <div style="text-align:center;margin-top:16px">
+          <div style="font-size:22px;font-weight:bold">05:12</div>
+          <div style="font-size:18px">847 steps</div>
+          <div style="margin-top:8px;font-size:11px">☐ Run in background</div>
+          <div style="margin-top:10px">[ Start ]  [ Stop ]</div>
+          <div style="margin-top:8px">[ Last 24h ]</div>
+          <div style="margin-top:12px">
+            <span style="background:#89b4fa;color:#1e1e2e;padding:4px 14px;border-radius:4px;font-size:12px">↑ Sync</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Settings top-left, Sync below chart button</h3>
+      <p>Settings gear in top-left corner (opposite the language flags). Sync is its own button below the existing controls — visible at all times.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;line-height:1.8;min-height:220px">
+        <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px">
+          <span>🇨🇿 🇬🇧</span>
+          <span style="color:#89b4fa;margin-left:8px">⚙</span>
+        </div>
+        <div style="text-align:center;margin-top:16px">
+          <div style="font-size:22px;font-weight:bold">05:12</div>
+          <div style="font-size:18px">847 steps</div>
+          <div style="margin-top:8px;font-size:11px">☐ Run in background</div>
+          <div style="margin-top:10px">[ Start ]  [ Stop ]</div>
+          <div style="margin-top:8px">[ Last 24h ]  [ ↑ Sync ]</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Settings joins language flags top-right, Sync beside chart button</h3>
+      <p>Settings gear appended to the existing top-right row. Sync sits beside "Last 24h" as a peer outlined button — keeps the layout symmetric.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="font-family:monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:6px;line-height:1.8;min-height:220px">
+        <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px">
+          <span>🇨🇿 🇬🇧</span>
+        </div>
+        <div style="text-align:center;margin-top:4px">
+          <div style="font-size:22px;font-weight:bold">05:12</div>
+          <div style="font-size:18px">847 steps</div>
+          <div style="margin-top:8px;font-size:11px">☐ Run in background</div>
+          <div style="margin-top:10px">[ Start ]  [ Stop ]</div>
+          <div style="margin-top:8px">[ Last 24h ]</div>
+          <div style="margin-top:16px;display:flex;justify-content:center;gap:8px;font-size:11px">
+            <span style="background:#313244;padding:3px 10px;border-radius:4px">⚙ Settings</span>
+            <span style="background:#89b4fa;color:#1e1e2e;padding:3px 10px;border-radius:4px">↑ Sync</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Settings + Sync as a bottom action bar</h3>
+      <p>Both Settings and Sync live together at the bottom — grouped as "server actions", clearly separated from local controls. Settings is outlined, Sync is filled/primary.</p>
+    </div>
+  </div>
+
+</div>

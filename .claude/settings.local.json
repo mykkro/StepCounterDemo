@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python3)",
-      "Bash(./gradlew assembleDebug)"
+      "Bash(./gradlew assembleDebug)",
+      "Bash(./gradlew --stop)",
+      "Bash(ls -la *.gradle app/*.gradle)"
     ]
   }
 }
