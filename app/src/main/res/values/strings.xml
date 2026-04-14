@@ -20,4 +20,5 @@
     <string name="save">Uložit</string>
     <string name="sync_success">Synchronizováno %d záznamů</string>
     <string name="sync_failure">Synchronizace selhala: %s</string>
+    <string name="sync_auth_failed">Autentizace selhala</string>
 </resources>

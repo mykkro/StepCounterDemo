@@ -21,7 +21,7 @@ class StepRepositoryTest {
             data[hourKey] = (data[hourKey] ?: 0) + delta
         }
 
-        override fun getLast24Hours(fromHour: Long): List<HourlyStepEntity> =
+        override fun getHoursSince(fromHour: Long): List<HourlyStepEntity> =
             data.entries
                 .filter { it.key >= fromHour }
                 .map { HourlyStepEntity(it.key, it.value) }

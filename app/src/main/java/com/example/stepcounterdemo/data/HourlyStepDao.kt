@@ -21,7 +21,7 @@ open class HourlyStepDao(private val db: () -> SQLiteDatabase) {
     }
 
     /** Returns all hourly rows where hourKey >= [fromHour], ascending. */
-    open fun getLast24Hours(fromHour: Long): List<HourlyStepEntity> {
+    open fun getHoursSince(fromHour: Long): List<HourlyStepEntity> {
         val cursor = db().rawQuery(
             "SELECT hourKey, stepCount FROM $TABLE WHERE hourKey >= ? ORDER BY hourKey ASC",
             arrayOf(fromHour.toString())

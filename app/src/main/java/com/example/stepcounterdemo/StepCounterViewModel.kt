@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 
 sealed class SyncState {
     object Idle : SyncState()
@@ -38,6 +39,8 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _serverConfigured = MutableStateFlow(isServerConfigured())
     val serverConfigured: StateFlow<Boolean> = _serverConfigured
+
+    private val syncMutex = Mutex()
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState
@@ -100,68 +103,76 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun sync() {
-        if (_syncState.value is SyncState.InProgress) return
         viewModelScope.launch(Dispatchers.IO) {
-            _syncState.value = SyncState.InProgress
+            if (!syncMutex.tryLock()) return@launch
+            try {
+                _syncState.value = SyncState.InProgress
 
-            val host = prefs.getString("server_host", "") ?: ""
-            val username = prefs.getString("server_username", "") ?: ""
-            val password = prefs.getString("server_password", "") ?: ""
-            val deviceGuid = prefs.getString("device_guid", "") ?: ""
-            var humanId = prefs.getString("human_id", "") ?: ""
-            var token = prefs.getString("jwt_token", "") ?: ""
-            val lastSyncedHour = prefs.getLong("last_synced_hour", 0L)
+                val host = prefs.getString("server_host", "") ?: ""
+                val username = prefs.getString("server_username", "") ?: ""
+                val password = prefs.getString("server_password", "") ?: ""
+                val deviceGuid = prefs.getString("device_guid", "") ?: ""
+                var humanId = prefs.getString("human_id", "") ?: ""
+                var token = prefs.getString("jwt_token", "") ?: ""
+                val lastSyncedHour = prefs.getLong("last_synced_hour", 0L)
 
-            val records = repository.getHoursSince(lastSyncedHour + 1)
+                val records = repository.getHoursSince(lastSyncedHour + 1)
 
-            if (records.isEmpty()) {
+                if (records.isEmpty()) {
+                    val now = System.currentTimeMillis()
+                    prefs.edit().putLong("last_sync_time", now).apply()
+                    _syncState.value = SyncState.Success(0)
+                    return@launch
+                }
+
+                var totalAccepted = 0
+
+                for (batch in records.chunked(100)) {
+                    var result = syncRepository.submitBatch(host, token, humanId, deviceGuid, batch)
+
+                    if (result is SyncRepository.BatchResult.Unauthorized) {
+                        val authResult = syncRepository.authenticate(host, username, password, deviceGuid)
+                        if (authResult is SyncRepository.AuthResult.Success) {
+                            token = authResult.token
+                            humanId = authResult.humanId
+                            prefs.edit()
+                                .putString("jwt_token", token)
+                                .putString("human_id", humanId)
+                                .apply()
+                            result = syncRepository.submitBatch(host, token, humanId, deviceGuid, batch)
+                        } else {
+                            _syncState.value = SyncState.Failure(
+                                getApplication<Application>().getString(R.string.sync_auth_failed)
+                            )
+                            return@launch
+                        }
+                    }
+
+                    when (result) {
+                        is SyncRepository.BatchResult.Success -> {
+                            totalAccepted += result.accepted
+                            val newWatermark = batch.last().hourKey
+                            prefs.edit().putLong("last_synced_hour", newWatermark).apply()
+                        }
+                        is SyncRepository.BatchResult.Failure -> {
+                            _syncState.value = SyncState.Failure(result.message)
+                            return@launch
+                        }
+                        is SyncRepository.BatchResult.Unauthorized -> {
+                            _syncState.value = SyncState.Failure(
+                                getApplication<Application>().getString(R.string.sync_auth_failed)
+                            )
+                            return@launch
+                        }
+                    }
+                }
+
                 val now = System.currentTimeMillis()
                 prefs.edit().putLong("last_sync_time", now).apply()
-                _syncState.value = SyncState.Success(0)
-                return@launch
+                _syncState.value = SyncState.Success(totalAccepted)
+            } finally {
+                syncMutex.unlock()
             }
-
-            var totalAccepted = 0
-
-            for (batch in records.chunked(100)) {
-                var result = syncRepository.submitBatch(host, token, humanId, deviceGuid, batch)
-
-                if (result is SyncRepository.BatchResult.Unauthorized) {
-                    val authResult = syncRepository.authenticate(host, username, password, deviceGuid)
-                    if (authResult is SyncRepository.AuthResult.Success) {
-                        token = authResult.token
-                        humanId = authResult.humanId
-                        prefs.edit()
-                            .putString("jwt_token", token)
-                            .putString("human_id", humanId)
-                            .apply()
-                        result = syncRepository.submitBatch(host, token, humanId, deviceGuid, batch)
-                    } else {
-                        _syncState.value = SyncState.Failure("Auth failed")
-                        return@launch
-                    }
-                }
-
-                when (result) {
-                    is SyncRepository.BatchResult.Success -> {
-                        totalAccepted += result.accepted
-                        val newWatermark = batch.last().hourKey
-                        prefs.edit().putLong("last_synced_hour", newWatermark).apply()
-                    }
-                    is SyncRepository.BatchResult.Failure -> {
-                        _syncState.value = SyncState.Failure(result.message)
-                        return@launch
-                    }
-                    is SyncRepository.BatchResult.Unauthorized -> {
-                        _syncState.value = SyncState.Failure("Auth failed")
-                        return@launch
-                    }
-                }
-            }
-
-            val now = System.currentTimeMillis()
-            prefs.edit().putLong("last_sync_time", now).apply()
-            _syncState.value = SyncState.Success(totalAccepted)
         }
     }
 }
