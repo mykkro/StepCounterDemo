@@ -19,15 +19,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,8 +50,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.stepcounterdemo.ui.HourlyStepChart
+import com.example.stepcounterdemo.ui.SettingsScreen
 import com.example.stepcounterdemo.ui.theme.StepCounterDemoTheme
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -60,8 +71,31 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             StepCounterDemoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    StepCounterScreen(modifier = Modifier.padding(innerPadding))
+                val navController = rememberNavController()
+                val snackbarHostState = remember { SnackbarHostState() }
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = "main",
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
+                        composable("main") {
+                            StepCounterScreen(
+                                onNavigateToSettings = { navController.navigate("settings") },
+                                snackbarHostState = snackbarHostState
+                            )
+                        }
+                        composable("settings") {
+                            val backStackEntry = it
+                            SettingsScreen(
+                                onBack = { navController.popBackStack() },
+                                viewModel = viewModel(backStackEntry)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -70,6 +104,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun StepCounterScreen(
+    onNavigateToSettings: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     viewModel: StepCounterViewModel = viewModel()
 ) {
@@ -110,9 +146,31 @@ fun StepCounterScreen(
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val runInBackground by viewModel.runInBackground.collectAsState()
     val last24Hours by viewModel.last24Hours.collectAsState()
+    val serverConfigured by viewModel.serverConfigured.collectAsState()
+    val syncState by viewModel.syncState.collectAsState()
+    val lastSyncTime by viewModel.lastSyncTime.collectAsState()
     val currentHour = System.currentTimeMillis() / 3_600_000L
 
     var showGraph by remember { mutableStateOf(false) }
+
+    // Show snackbar on sync completion, then reset state
+    LaunchedEffect(syncState) {
+        when (val s = syncState) {
+            is SyncState.Success -> {
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.sync_success, s.count)
+                )
+                viewModel.resetSyncState()
+            }
+            is SyncState.Failure -> {
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.sync_failure, s.message)
+                )
+                viewModel.resetSyncState()
+            }
+            else -> {}
+        }
+    }
 
     // Stop service on app background if "run in background" is off
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -197,15 +255,55 @@ fun StepCounterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedButton(onClick = {
-                viewModel.refreshChart()
-                showGraph = true
-            }) {
-                Text(stringResource(R.string.last_24h))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(onClick = {
+                    viewModel.refreshChart()
+                    showGraph = true
+                }) {
+                    Text(stringResource(R.string.last_24h))
+                }
+                if (serverConfigured) {
+                    Button(
+                        onClick = { viewModel.sync() },
+                        enabled = syncState !is SyncState.InProgress
+                    ) {
+                        if (syncState is SyncState.InProgress) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(stringResource(R.string.sync))
+                        }
+                    }
+                }
+            }
+
+            // Hint text: failure message while snackbar is visible, then last success time
+            if (serverConfigured) {
+                val hintText = when {
+                    syncState is SyncState.Failure ->
+                        stringResource(R.string.last_sync_failed)
+                    lastSyncTime > 0L -> {
+                        val formatted = SimpleDateFormat("HH:mm", Locale.getDefault())
+                            .format(Date(lastSyncTime))
+                        stringResource(R.string.last_sync_time, formatted)
+                    }
+                    else -> null
+                }
+                hintText?.let {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
         }
 
-        // Language flag buttons — top-right corner
+        // Language flags + settings gear — top-right corner
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -224,6 +322,9 @@ fun StepCounterScreen(
                 activity.recreate()
             }) {
                 Text("🇬🇧", fontSize = 28.sp)
+            }
+            TextButton(onClick = onNavigateToSettings) {
+                Text("⚙", fontSize = 28.sp)
             }
         }
     }
