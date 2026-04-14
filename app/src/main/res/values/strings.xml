@@ -8,4 +8,16 @@
     <string name="steps">kroků</string>
     <string name="notification_title">Krokoměr</string>
     <string name="notification_stop_action">Zastavit</string>
+    <string name="sync">Synchronizovat</string>
+    <string name="last_sync_failed">Poslední synchronizace selhala</string>
+    <string name="last_sync_time">Poslední sync: %s</string>
+    <string name="settings_title">Nastavení serveru</string>
+    <string name="settings_host">URL serveru</string>
+    <string name="settings_username">Uživatelské jméno</string>
+    <string name="settings_password">Heslo</string>
+    <string name="settings_test_connection">Test připojení</string>
+    <string name="settings_connection_ok">Připojení úspěšné</string>
+    <string name="save">Uložit</string>
+    <string name="sync_success">Synchronizováno %d záznamů</string>
+    <string name="sync_failure">Synchronizace selhala: %s</string>
 </resources>

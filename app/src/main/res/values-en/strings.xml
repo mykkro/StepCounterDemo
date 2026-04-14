@@ -8,4 +8,16 @@
     <string name="steps">steps</string>
     <string name="notification_title">Step Counter</string>
     <string name="notification_stop_action">Stop</string>
+    <string name="sync">Sync</string>
+    <string name="last_sync_failed">Last sync failed</string>
+    <string name="last_sync_time">Last sync: %s</string>
+    <string name="settings_title">Server Settings</string>
+    <string name="settings_host">Host URL</string>
+    <string name="settings_username">Username</string>
+    <string name="settings_password">Password</string>
+    <string name="settings_test_connection">Test Connection</string>
+    <string name="settings_connection_ok">Connection successful</string>
+    <string name="save">Save</string>
+    <string name="sync_success">Synced %d records</string>
+    <string name="sync_failure">Sync failed: %s</string>
 </resources>
