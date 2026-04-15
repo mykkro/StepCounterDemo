@@ -31,7 +31,14 @@ class SyncRepository(
     sealed class BatchResult {
         data class Success(val accepted: Int) : BatchResult()
         object Unauthorized : BatchResult()
+        object DeviceRejected : BatchResult()
         data class Failure(val message: String) : BatchResult()
+    }
+
+    sealed class VersionCheckResult {
+        object Compatible : VersionCheckResult()
+        data class Incompatible(val serverVersion: String) : VersionCheckResult()
+        data class Failure(val message: String) : VersionCheckResult()
     }
 
     companion object {
@@ -114,11 +121,43 @@ class SyncRepository(
                         BatchResult.Success(json.getJSONArray("accepted").length())
                     }
                     401 -> BatchResult.Unauthorized
+                    403 -> BatchResult.DeviceRejected
                     else -> BatchResult.Failure("HTTP ${response.code}")
                 }
             }
         } catch (e: Exception) {
             BatchResult.Failure(e.message ?: "Network error")
         }
+    }
+
+    fun checkApiVersion(host: String): VersionCheckResult {
+        val request = Request.Builder()
+            .url("${host.trimEnd('/')}/api/devices/stepcounter/version")
+            .get()
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (response.code != 200) {
+                    return VersionCheckResult.Failure("HTTP ${response.code}")
+                }
+                val json = JSONObject(response.body?.string() ?: "{}")
+                val version = json.getString("version")
+                if (isVersionAtLeast(version, 1, 0)) {
+                    VersionCheckResult.Compatible
+                } else {
+                    VersionCheckResult.Incompatible(version)
+                }
+            }
+        } catch (e: Exception) {
+            VersionCheckResult.Failure(e.message ?: "Network error")
+        }
+    }
+
+    private fun isVersionAtLeast(version: String, major: Int, minor: Int): Boolean {
+        val parts = version.split(".")
+        val serverMajor = parts.getOrNull(0)?.toIntOrNull() ?: return false
+        val serverMinor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        return serverMajor > major || (serverMajor == major && serverMinor >= minor)
     }
 }

@@ -185,6 +185,18 @@ class StepCounterViewModel(application: Application) : AndroidViewModel(applicat
                             )
                             return@launch
                         }
+                        is SyncRepository.BatchResult.DeviceRejected -> {
+                            if (totalAccepted > 0) {
+                                val now = System.currentTimeMillis()
+                                prefs.edit().putLong("last_sync_time", now).apply()
+                                _lastSyncTime.value = now
+                            }
+                            _lastSyncFailed.value = true
+                            _syncState.value = SyncState.Failure(
+                                getApplication<Application>().getString(R.string.sync_device_rejected)
+                            )
+                            return@launch
+                        }
                     }
                 }
 

@@ -21,5 +21,7 @@
     <string name="sync_success">Synchronizováno %d záznamů</string>
     <string name="sync_failure">Synchronizace selhala: %s</string>
     <string name="sync_auth_failed">Autentizace selhala</string>
+    <string name="sync_device_rejected">Zařízení zamítnuto serverem</string>
+    <string name="settings_api_incompatible">Server API %s není podporováno (vyžadováno ≥ 1.0)</string>
     <string name="navigate_back">Zpět</string>
 </resources>

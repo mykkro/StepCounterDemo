@@ -180,4 +180,87 @@ class SyncRepositoryTest {
         assertTrue(result is SyncRepository.BatchResult.Failure)
         assertTrue((result as SyncRepository.BatchResult.Failure).message.contains("500"))
     }
+
+    @Test
+    fun `submitBatch returns DeviceRejected on HTTP 403`() {
+        server.enqueue(MockResponse().setResponseCode(403))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.submitBatch(baseUrl, "tok", "h", "d",
+            listOf(com.example.stepcounterdemo.data.HourlyStepEntity(1L, 10)))
+
+        assertEquals(SyncRepository.BatchResult.DeviceRejected, result)
+    }
+
+    // ── checkApiVersion ────────────────────────────────────────────────────────
+
+    @Test
+    fun `checkApiVersion calls GET stepcounter version endpoint`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"api":"stepcounter","version":"1.0","released":"2026-04-15"}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        repo.checkApiVersion(baseUrl)
+
+        val recorded = server.takeRequest()
+        assertEquals("GET", recorded.method)
+        assertEquals("/api/devices/stepcounter/version", recorded.path)
+    }
+
+    @Test
+    fun `checkApiVersion returns Compatible when server reports version 1_0`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"api":"stepcounter","version":"1.0","released":"2026-04-15"}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.checkApiVersion(baseUrl)
+
+        assertEquals(SyncRepository.VersionCheckResult.Compatible, result)
+    }
+
+    @Test
+    fun `checkApiVersion returns Compatible when server reports version higher than 1_0`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"api":"stepcounter","version":"2.3","released":"2027-01-01"}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.checkApiVersion(baseUrl)
+
+        assertEquals(SyncRepository.VersionCheckResult.Compatible, result)
+    }
+
+    @Test
+    fun `checkApiVersion returns Incompatible when server reports version 0_1`() {
+        server.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""{"api":"stepcounter","version":"0.1","released":"2026-04-14"}"""))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.checkApiVersion(baseUrl)
+
+        assertTrue(result is SyncRepository.VersionCheckResult.Incompatible)
+        assertEquals("0.1", (result as SyncRepository.VersionCheckResult.Incompatible).serverVersion)
+    }
+
+    @Test
+    fun `checkApiVersion returns Failure on non-200 response`() {
+        server.enqueue(MockResponse().setResponseCode(404))
+
+        val baseUrl = server.url("/").toString().trimEnd('/')
+        val result = repo.checkApiVersion(baseUrl)
+
+        assertTrue(result is SyncRepository.VersionCheckResult.Failure)
+    }
+
+    @Test
+    fun `checkApiVersion returns Failure on network error`() {
+        server.shutdown()
+
+        val result = repo.checkApiVersion("http://localhost:1")
+
+        assertTrue(result is SyncRepository.VersionCheckResult.Failure)
+    }
 }

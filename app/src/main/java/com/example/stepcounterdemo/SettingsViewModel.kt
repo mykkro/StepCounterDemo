@@ -2,6 +2,7 @@ package com.example.stepcounterdemo
 
 import android.app.Application
 import android.content.Context
+import com.example.stepcounterdemo.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -40,6 +41,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     _testState.value = TestState.Failure("Device not initialized")
                     return@launch
                 }
+
+                val versionResult = syncRepository.checkApiVersion(host.trim())
+                if (versionResult is SyncRepository.VersionCheckResult.Incompatible) {
+                    _testState.value = TestState.Failure(
+                        getApplication<android.app.Application>()
+                            .getString(R.string.settings_api_incompatible, versionResult.serverVersion)
+                    )
+                    return@launch
+                }
+                if (versionResult is SyncRepository.VersionCheckResult.Failure) {
+                    _testState.value = TestState.Failure(versionResult.message)
+                    return@launch
+                }
+
                 val result = syncRepository.authenticate(host.trim(), username.trim(), password, deviceGuid)
                 when (result) {
                     is SyncRepository.AuthResult.Success -> {
